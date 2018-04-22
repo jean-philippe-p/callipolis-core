@@ -1,0 +1,7 @@
+{
+	"name" : "callipolis-core",
+	"description" : "callipolis-core",
+	"require" : {
+		"comhon-project/comhon" : "2.0.0"
+	}
+}

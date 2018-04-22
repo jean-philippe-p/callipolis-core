@@ -1,0 +1,31 @@
+{
+    "version": "2.0",
+    "extends": "\\Service",
+    "properties": [
+        {
+            "name": "text",
+            "type": "string"
+        },
+        {
+            "name": "articles",
+            "type": "string"
+        },
+        {
+            "name": "important",
+            "type": "string"
+        },
+        {
+            "name": "keyWords",
+            "type": "array",
+            "values": {
+                "type": "string",
+                "name": "keyWord"
+            }
+        },
+        {
+            "name": "mainService",
+            "type": "\\MainService",
+            "is_foreign": true
+        }
+    ]
+}

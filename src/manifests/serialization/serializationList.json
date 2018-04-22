@@ -1,0 +1,7 @@
+{
+	"version": "2.0",
+	"list": {
+		"MainService": "MainService/manifest.json",
+		"SubService" : "SubService/manifest.json"
+	}
+}
