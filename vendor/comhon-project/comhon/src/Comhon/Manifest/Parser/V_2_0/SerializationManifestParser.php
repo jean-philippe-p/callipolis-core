@@ -15,7 +15,6 @@ use Comhon\Model\Singleton\ModelManager;
 use Comhon\Manifest\Parser\SerializationManifestParser as ParentSerializationManifestParser;
 use Comhon\Interfacer\XMLInterfacer;
 use Comhon\Exception\ManifestException;
-use Comhon\Exception\SerializationManifestIdException;
 
 class SerializationManifestParser extends ParentSerializationManifestParser {
 
@@ -104,7 +103,7 @@ class SerializationManifestParser extends ParentSerializationManifestParser {
 			}
 			$serialization =  ModelManager::getInstance()->getInstanceModel($type)->loadObject($id);
 			if (is_null($serialization)) {
-				throw new SerializationManifestIdException($type, $id);
+				throw new ManifestException("impossible to load $type serialization with id '$id'");
 			}
 		} else {
 			throw new ManifestException('malformed serialization');

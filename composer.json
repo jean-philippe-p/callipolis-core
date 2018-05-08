@@ -3,5 +3,10 @@
 	"description" : "callipolis-core",
 	"require" : {
 		"comhon-project/comhon" : "2.0.0"
+	},
+	"autoload" : {
+		"psr-4" : {
+			"Callipolis\\" : "src"
+		}
 	}
 }

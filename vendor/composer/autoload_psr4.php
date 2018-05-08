@@ -7,4 +7,5 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'Comhon\\' => array($vendorDir . '/comhon-project/comhon/src/Comhon'),
+    'Callipolis\\' => array($baseDir . '/src'),
 );

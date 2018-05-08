@@ -112,43 +112,21 @@ abstract class Model {
 	 */
 	final public function load() {
 		if (!$this->isLoaded && !$this->isLoading) {
-			try {
-				$this->isLoading = true;
-				$result = ModelManager::getInstance()->getProperties($this);
-				$this->parent = $result[ModelManager::PARENT_MODEL];
-				$this->_setProperties($result[ModelManager::PROPERTIES]);
-	
-				if (!is_null($result[ModelManager::OBJECT_CLASS])) {
-					if ($this->objectClass !== $result[ModelManager::OBJECT_CLASS]) {
-						$this->objectClass = $result[ModelManager::OBJECT_CLASS];
-						$this->isExtended = true;
-					}
+			$this->isLoading = true;
+			$result = ModelManager::getInstance()->getProperties($this);
+			$this->parent = $result[ModelManager::PARENT_MODEL];
+			$this->_setProperties($result[ModelManager::PROPERTIES]);
+
+			if (!is_null($result[ModelManager::OBJECT_CLASS])) {
+				if ($this->objectClass !== $result[ModelManager::OBJECT_CLASS]) {
+					$this->objectClass = $result[ModelManager::OBJECT_CLASS];
+					$this->isExtended = true;
 				}
-				$this->_setSerialization();
-				$this->_init();
-				$this->isLoaded  = true;
-				$this->isLoading = false;
-				
-			} catch (\Exception $e) {
-				// reinitialize attributes if any excpetion
-				$this->isLoading = false;
-				$this->parent = null;
-				$this->objectClass = Object::class;
-				$this->isExtended = false;
-				$this->properties   = [];
-				$this->idProperties = [];
-				$this->aggregations = [];
-				$this->publicProperties  = [];
-				$this->serializableProperties = [];
-				$this->propertiesWithDefaultValues = [];
-				$this->multipleForeignProperties = [];
-				$this->complexProperties = [];
-				$this->dateTimeProperties = [];
-				$this->uniqueIdProperty;
-				$this->hasPrivateIdProperty;
-				
-				throw $e;
 			}
+			$this->_setSerialization();
+			$this->_init();
+			$this->isLoaded  = true;
+			$this->isLoading = false;
 		}
 	}
 	

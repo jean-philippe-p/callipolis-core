@@ -4,12 +4,13 @@
 
 namespace Composer\Autoload;
 
-class ComposerStaticInit371c8a627c59ba7e32825a865dee8e3a
+class ComposerStaticInit932a306c44e4bbe1ce6466d5a7c981ee
 {
     public static $prefixLengthsPsr4 = array (
         'C' => 
         array (
             'Comhon\\' => 7,
+            'Callipolis\\' => 11,
         ),
     );
 
@@ -18,13 +19,17 @@ class ComposerStaticInit371c8a627c59ba7e32825a865dee8e3a
         array (
             0 => __DIR__ . '/..' . '/comhon-project/comhon/src/Comhon',
         ),
+        'Callipolis\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/src',
+        ),
     );
 
     public static function getInitializer(ClassLoader $loader)
     {
         return \Closure::bind(function () use ($loader) {
-            $loader->prefixLengthsPsr4 = ComposerStaticInit371c8a627c59ba7e32825a865dee8e3a::$prefixLengthsPsr4;
-            $loader->prefixDirsPsr4 = ComposerStaticInit371c8a627c59ba7e32825a865dee8e3a::$prefixDirsPsr4;
+            $loader->prefixLengthsPsr4 = ComposerStaticInit932a306c44e4bbe1ce6466d5a7c981ee::$prefixLengthsPsr4;
+            $loader->prefixDirsPsr4 = ComposerStaticInit932a306c44e4bbe1ce6466d5a7c981ee::$prefixDirsPsr4;
 
         }, null, ClassLoader::class);
     }
