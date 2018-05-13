@@ -1,19 +1,18 @@
 <?php
 use Comhon\Api\ObjectService;
+use Comhon\Object\Config\Config;
 use Comhon\Model\Singleton\ModelManager;
 use Comhon\Interfacer\StdObjectInterfacer;
 use Callipolis\Exception\HttpException;
 
 require_once 'vendor/autoload.php';
 
-/*
-use Comhon\Object\Config\Config;
-use Comhon\Model\Singleton\ModelManager;
+
 
 $base_path = '/home/jean-philippe/ReposGit/callipolis/src/';
 
-// Config::setLoadPath("./config/config.json");
-*/
+Config::setLoadPath("./config/config.json");
+
 
 /************************************************\
 |                   functions                    |
