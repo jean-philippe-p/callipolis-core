@@ -17,6 +17,11 @@
         {
             "name": "logo",
             "type": "string"
+        },
+        {
+            "name": "color",
+            "type": "string",
+            "pattern": "color"
         }
     ]
 }

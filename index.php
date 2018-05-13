@@ -49,7 +49,7 @@ function getSubServices($mainServiceId) {
     $params = new \stdClass();
     $params->model = 'SubService';
     $params->filter = getFilter('SubService', 'mainService', '=', $mainServiceId);
-    $params->properties = ['title', 'summary', 'mainService'];
+    $params->properties = ['title', 'summary', 'mainService', 'logo', 'color'];
     
     $res = ObjectService::getObjects($params);
     if (!$res->success) {
@@ -114,11 +114,24 @@ function getFilter($model = 'MainService', $property = 'title', $operator = '<>'
     return $filter;
 }
 
+function getLogo($logoId) {
+    if (!ctype_digit($logoId)) {
+        throw new HttpException('error', 400);
+    }
+    $file_af = "/var/data/image/$logoId/image.png";
+    
+    if (!file_exists($file_af)) {
+        throw new HttpException('error', 404);
+    }
+    readfile($file_af);
+}
+
 function get($explodedRoute) {
     $response = null;
+    $isFile = false;
     
     switch ($explodedRoute[0]) {
-        case 'navbar':
+        case 'Navbar':
             $response = getNavBar();
             break;
         case 'MainServices':
@@ -133,16 +146,22 @@ function get($explodedRoute) {
         case 'SubService':
             $response = getSubService($explodedRoute[1]);
             break;
+        case 'Logo':
+            header('Content-Type: image/png');
+            getLogo($explodedRoute[1]);
+            $isFile = true;
+            break;
         default:
             throw new HttpException('error', 501);
             break;
     }
-    if (!is_array($response) && !($response instanceof \stdClass)) {
-        throw new HttpException('error', 500);
+    if (!$isFile) {
+        if (!is_array($response) && !($response instanceof \stdClass)) {
+            throw new HttpException('error', 500);
+        }
+        header('Content-Type: application/json');
+        echo json_encode($response);
     }
-    header('Access-Control-Allow-Origin: *');
-    header('Content-Type: application/json');
-    echo json_encode($response);
 }
 
 /************************************************\
@@ -164,6 +183,9 @@ if (empty($explodedRoute)) {
     http_response_code(200);
     exit(0);
 }
+
+// TODO remove
+header('Access-Control-Allow-Origin: *');
 
 try {
     switch ($_SERVER['REQUEST_METHOD']) {
