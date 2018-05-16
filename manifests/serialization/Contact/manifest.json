@@ -1,0 +1,12 @@
+{
+    "version": "2.0",
+    "serialization": {
+        "type": "sqlTable",
+        "id": "contact"
+    },
+    "properties": {
+        "creationDate": {
+            "serializationName": "creation_date"
+        }
+    }
+}

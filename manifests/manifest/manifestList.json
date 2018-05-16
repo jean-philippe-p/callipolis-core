@@ -3,6 +3,7 @@
 	"list": {
 		"Service"    : "Service/manifest.json",
 		"MainService": "MainService/manifest.json",
-		"SubService" : "SubService/manifest.json"
+		"SubService" : "SubService/manifest.json",
+		"Contact"    : "Contact/manifest.json"
 	}
 }

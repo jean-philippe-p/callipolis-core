@@ -4,9 +4,9 @@ use Comhon\Object\Config\Config;
 use Comhon\Model\Singleton\ModelManager;
 use Comhon\Interfacer\StdObjectInterfacer;
 use Callipolis\Exception\HttpException;
+use Comhon\Interfacer\AssocArrayInterfacer;
 
 require_once 'vendor/autoload.php';
-
 
 
 $base_path = '/home/jean-philippe/ReposGit/callipolis/src/';
@@ -27,19 +27,19 @@ function getMainServices() {
     
     $res = ObjectService::getObjects($params);
     if (!$res->success) {
-        throw new HttpException('error', 500);
+    	throw new HttpException(json_encode($res), 500);
     }
     return $res->result;
 }
 
 function getMainService($mainServiceId) {
     if (!ctype_digit($mainServiceId)) {
-        throw new HttpException('error', 400);
+        throw new HttpException('id must be an integer', 400);
     }
     $mainServiceModel = ModelManager::getInstance()->getInstanceModel('MainService');
     $mainService = $mainServiceModel->loadObject((integer) $mainServiceId);
     if (is_null($mainService)) {
-        throw new HttpException('error', 404);
+        throw new HttpException("MainService $mainServiceId not found", 404);
     }
     return $mainService->export(new StdObjectInterfacer());
 }
@@ -52,19 +52,19 @@ function getSubServices($mainServiceId) {
     
     $res = ObjectService::getObjects($params);
     if (!$res->success) {
-        throw new HttpException('error', 500);
+    	throw new HttpException(json_encode($res), 500);
     }
     return $res->result;
 }
 
 function getSubService($subServiceId) {
     if (!ctype_digit($subServiceId)) {
-        throw new HttpException('error', 400);
+        throw new HttpException('id must be an integer', 400);
     }
     $subServiceModel = ModelManager::getInstance()->getInstanceModel('SubService');
     $subService = $subServiceModel->loadObject((integer) $subServiceId);
     if (is_null($subService)) {
-        throw new HttpException('error', 404);
+        throw new HttpException('SubService $mainServiceId not found', 404);
     }
     return $subService->export(new StdObjectInterfacer());
 }
@@ -80,7 +80,7 @@ function getNavBar() {
     
     $res = ObjectService::getObjects($params);
     if (!$res->success) {
-        throw new HttpException('error', 500);
+    	throw new HttpException(json_encode($res), 500);
     }
     $navbar->services = [];
     $propertySubServices = ModelManager::getInstance()->getInstanceModel('MainService')->getProperty('subServices', true)->getName();
@@ -93,7 +93,7 @@ function getNavBar() {
     $params->properties = ['title', 'mainService'];
     $res = ObjectService::getObjects($params);
     if (!$res->success) {
-        throw new HttpException('error', 500);
+    	throw new HttpException(json_encode($res), 500);
     }
     $propertyMainService = ModelManager::getInstance()->getInstanceModel('SubService')->getProperty('mainService', true)->getName();
     foreach ($res->result as $subService) {
@@ -134,7 +134,7 @@ function get($explodedRoute) {
             $response = getNavBar();
             break;
         case 'MainServices':
-            $response = getMainServices();
+        	$response = getMainServices();
             break;
         case 'MainService':
             $response = getMainService($explodedRoute[1]);
@@ -151,16 +151,32 @@ function get($explodedRoute) {
             $isFile = true;
             break;
         default:
-            throw new HttpException('error', 501);
+            throw new HttpException('route not handled', 501);
             break;
     }
     if (!$isFile) {
         if (!is_array($response) && !($response instanceof \stdClass)) {
-            throw new HttpException('error', 500);
+        	throw new HttpException('malformed response', 500);
         }
         header('Content-Type: application/json');
         echo json_encode($response);
     }
+}
+
+function post($explodedRoute) {
+	$response = null;
+	$isFile = false;
+	$post = json_decode(file_get_contents('php://input'), true);
+	
+	$model  = ModelManager::getInstance()->getInstanceModel($explodedRoute[0]);
+	$interfacer = new AssocArrayInterfacer();
+	$object = $interfacer->import($post, $model);
+	
+	$object->save();
+	$model->loadAndFillObject($object, null, true);
+	
+	header('Content-Type: application/json');
+	echo json_encode($interfacer->export($object));
 }
 
 /************************************************\
@@ -185,18 +201,28 @@ if (empty($explodedRoute)) {
 
 // TODO remove
 header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Headers: Content-Type');
 
 try {
-    switch ($_SERVER['REQUEST_METHOD']) {
-        case 'GET':
-            get($explodedRoute);
-            break;
+	switch ($_SERVER['REQUEST_METHOD']) {
+		case 'GET':
+			get($explodedRoute);
+			break;
+		case 'POST':
+			post($explodedRoute);
+			break;
+		case 'OPTIONS':
+			header('Content-Type: application/json');
+			break;
         default:
-            throw new HttpException('error', 501);
+            throw new HttpException('method not handled', 501);
             break;
     }    
 } catch (HttpException $e) {
-    http_response_code($e->getCode());
+	http_response_code($e->getCode());
+	trigger_error($e->getCode());
+	trigger_error($e->getMessage());
+	trigger_error($e->getTraceAsString());
 } catch (Exception $e) {
     http_response_code(500);
     trigger_error($e->getCode());
