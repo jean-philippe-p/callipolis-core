@@ -5,6 +5,8 @@ use Comhon\Model\Singleton\ModelManager;
 use Comhon\Interfacer\StdObjectInterfacer;
 use Callipolis\Exception\HttpException;
 use Comhon\Interfacer\AssocArrayInterfacer;
+use Comhon\Object\Object;
+use Comhon\Serialization\SqlTable;
 
 require_once 'vendor/autoload.php';
 
@@ -103,6 +105,38 @@ function getNavBar() {
     return $navbar;
 }
 
+function startAdminSession() {
+	$post = json_decode(file_get_contents('php://input'), true);
+	
+	$params = new \stdClass();
+	$params->model = 'Admin';
+	$params->filter = new \stdClass();
+	$params->filter->type = 'conjunction';
+	$params->filter->elements = [
+		getFilter('Admin', 'name', '=', $post['name']),
+		getFilter('Admin', 'password', '=', $post['password']),
+	];
+	
+	$res = ObjectService::getObjects($params);
+	if (!$res->success) {
+		throw new HttpException(json_encode($res), 500);
+	}
+	if (count($res->result) === 0) {
+		throw new HttpException('not found', 404);
+	}
+	if (count($res->result) > 1) {
+		throw new HttpException('should\'t have several result', 500);
+	}
+	
+	$admin = ModelManager::getInstance()->getInstanceModel('Admin')->loadObject($res->result[0]->name);
+	$admin->setValue('token', md5(mt_rand()));
+	$admin->save(SqlTable::UPDATE);
+	$token = new \stdClass();
+	$token->token = $admin->getValue('token');
+	
+	return $token;
+}
+
 function getFilter($model = 'MainService', $property = 'title', $operator = '<>', $value = 'plop') {
     $filter = new stdClass();
     $filter->model = $model;
@@ -117,7 +151,7 @@ function getLogo($logoId) {
     if (!ctype_digit($logoId)) {
         throw new HttpException('error', 400);
     }
-    $file_af = "/var/data/image/$logoId/image.png";
+    $file_af = __DIR__ . "/config/image/$logoId/image.png";
     
     if (!file_exists($file_af)) {
         throw new HttpException('error', 404);
@@ -164,6 +198,7 @@ function get($explodedRoute) {
 }
 
 function post($explodedRoute) {
+	validateToken();
 	$response = null;
 	$isFile = false;
 	$post = json_decode(file_get_contents('php://input'), true);
@@ -179,11 +214,32 @@ function post($explodedRoute) {
 	echo json_encode($interfacer->export($object));
 }
 
+function validateToken() {
+	if (!array_key_exists('token', $_GET)) {
+		throw new HttpException('missing token', 401);
+	}
+	
+	$params = new \stdClass();
+	$params->model = 'Admin';
+	$params->filter = getFilter('Admin', 'token', '=', $_GET['token']);
+	
+	$res = ObjectService::getObjects($params);
+	if (!$res->success) {
+		throw new HttpException(json_encode($res), 500);
+	}
+	if (count($res->result) === 0) {
+		throw new HttpException('invalid token', 401);
+	}
+}
+
 /************************************************\
 |                     main                       |
 \************************************************/
 
 $route = substr(preg_replace('~/+~', '/', $_SERVER['REQUEST_URI'].'/'), 1, -1);
+if (strpos($route, '?') !== false) {
+	$route = strstr($route, '?', true);
+}
 
 //echo $route."<br/>";
 
@@ -204,20 +260,53 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Headers: Content-Type');
 
 try {
-	switch ($_SERVER['REQUEST_METHOD']) {
-		case 'GET':
-			get($explodedRoute);
-			break;
-		case 'POST':
-			post($explodedRoute);
-			break;
-		case 'OPTIONS':
-			header('Content-Type: application/json');
-			break;
-        default:
-            throw new HttpException('method not handled', 501);
-            break;
-    }    
+	if ($explodedRoute[0] == 'upload') {
+		validateToken();
+		header('Content-Type: application/json');
+		if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+			exit(0);
+		}
+		if ($_SERVER['REQUEST_METHOD'] != 'POST') {
+			throw new HttpException('method not handled', 501);
+		}
+		if (empty($_FILES['logo'])) {
+			throw new HttpException('missing file', 400);
+		}
+		if ($_FILES['logo']['error'] !== 0) {
+			throw new HttpException('upload error', 500);
+		}
+		$id = time().mt_rand();
+		$logo_ad = __DIR__ . '/config/image/' . $id;
+		$logo_af = $logo_ad. '/image.png';
+		if (!mkdir($logo_ad) || !move_uploaded_file($_FILES['logo']['tmp_name'], $logo_af)) {
+			throw new HttpException('upload copy error', 500);
+		}
+		echo json_encode(['id' => $id]);
+	} elseif ($explodedRoute[0] == 'login') {
+		header('Content-Type: application/json');
+		if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
+			exit(0);
+		}
+		if ($_SERVER['REQUEST_METHOD'] != 'POST') {
+			throw new HttpException('method not handled', 501);
+		}
+		echo json_encode(startAdminSession());
+	} else {
+		switch ($_SERVER['REQUEST_METHOD']) {
+			case 'GET':
+				get($explodedRoute);
+				break;
+			case 'POST':
+				post($explodedRoute);
+				break;
+			case 'OPTIONS':
+				header('Content-Type: application/json');
+				break;
+	        default:
+	            throw new HttpException('method not handled', 501);
+	            break;
+	    }
+	}
 } catch (HttpException $e) {
 	http_response_code($e->getCode());
 	trigger_error($e->getCode());
