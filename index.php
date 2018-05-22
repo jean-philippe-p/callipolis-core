@@ -81,7 +81,7 @@ function getNavBar() {
     }
     
     $params->model = 'SubService';
-    $params->properties = ['title', 'mainService'];
+    $params->properties = ['title', 'mainService', 'keyWords'];
     $res = ObjectService::getObjects($params);
     if (!$res->success) {
     	throw new HttpException(json_encode($res), 500);
