@@ -1,0 +1,26 @@
+{
+    "version": "2.0",
+    "properties": [
+        {
+            "name": "id",
+            "type": "integer",
+            "is_id": true
+        },
+        {
+            "name": "title",
+            "type": "string"
+        },
+        {
+            "name": "text",
+            "type": "string"
+        },
+        {
+            "name": "articles",
+            "type": "string"
+        },
+        {
+            "name": "important",
+            "type": "string"
+        }
+    ]
+}

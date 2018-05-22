@@ -34,18 +34,6 @@ function getMainServices() {
     return $res->result;
 }
 
-function getMainService($mainServiceId) {
-    if (!ctype_digit($mainServiceId)) {
-        throw new HttpException('id must be an integer', 400);
-    }
-    $mainServiceModel = ModelManager::getInstance()->getInstanceModel('MainService');
-    $mainService = $mainServiceModel->loadObject((integer) $mainServiceId);
-    if (is_null($mainService)) {
-        throw new HttpException("MainService $mainServiceId not found", 404);
-    }
-    return $mainService->export(new StdObjectInterfacer());
-}
-
 function getSubServices($mainServiceId) {
     $params = new \stdClass();
     $params->model = 'SubService';
@@ -59,26 +47,27 @@ function getSubServices($mainServiceId) {
     return $res->result;
 }
 
-function getSubService($subServiceId) {
-    if (!ctype_digit($subServiceId)) {
+function getResource($resource, $id) {
+	if (!ctype_digit($id)) {
         throw new HttpException('id must be an integer', 400);
     }
-    $subServiceModel = ModelManager::getInstance()->getInstanceModel('SubService');
-    $subService = $subServiceModel->loadObject((integer) $subServiceId);
+    $subServiceModel = ModelManager::getInstance()->getInstanceModel($resource);
+    $subService = $subServiceModel->loadObject((integer) $id);
     if (is_null($subService)) {
-        throw new HttpException('SubService $mainServiceId not found', 404);
+    	throw new HttpException("$resource $id not found", 404);
     }
     return $subService->export(new StdObjectInterfacer());
 }
 
 function getNavBar() {
-    $navbar = new \stdClass();
+	$navbar = new \stdClass();
+	
+	// retrieve services and sub-services
     $params = new \stdClass();
     $params->model = 'MainService';
     $params->properties = ['title'];
     
-    // hack, objectservice doesn't work without filter so we add fake one
-    $params->filter = getFilter();
+    $params->filter = getFilter(); // hack, objectservice doesn't work without filter so we add fake one
     
     $res = ObjectService::getObjects($params);
     if (!$res->success) {
@@ -102,6 +91,20 @@ function getNavBar() {
         $navbar->services[$subService->{$propertyMainService}]->$propertySubServices[] = $subService;
     }
     $navbar->services = array_values($navbar->services);
+    
+    // retrieve introduces
+    $params = new \stdClass();
+    $params->model = 'Introduce';
+    $params->properties = ['title'];
+    
+    $params->filter = getFilter('Introduce'); // hack, objectservice doesn't work without filter so we add fake one
+    
+    $res = ObjectService::getObjects($params);
+    if (!$res->success) {
+    	throw new HttpException(json_encode($res), 500);
+    }
+    $navbar->introduces = $res->result;
+    
     return $navbar;
 }
 
@@ -170,14 +173,13 @@ function get($explodedRoute) {
         case 'MainServices':
         	$response = getMainServices();
             break;
-        case 'MainService':
-            $response = getMainService($explodedRoute[1]);
-            break;
         case 'SubServices':
             $response = getSubServices($explodedRoute[1]);
             break;
+        case 'MainService':
         case 'SubService':
-            $response = getSubService($explodedRoute[1]);
+        case 'Introduce':
+        	$response = getResource($explodedRoute[0], $explodedRoute[1]);
             break;
         case 'Logo':
             header('Content-Type: image/png');
