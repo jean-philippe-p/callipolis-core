@@ -21,6 +21,11 @@
         {
             "name": "important",
             "type": "string"
+        },
+        {
+            "name": "display",
+            "type": "string",
+            "enum": ["navbar", "footer"]
         }
     ]
 }

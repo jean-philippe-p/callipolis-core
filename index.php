@@ -95,9 +95,11 @@ function getNavBar() {
     // retrieve introduces
     $params = new \stdClass();
     $params->model = 'Introduce';
-    $params->properties = ['title'];
+    $params->properties = ['title', 'display'];
     
-    $params->filter = getFilter('Introduce'); // hack, objectservice doesn't work without filter so we add fake one
+    $params->filter = isset($_GET['withFooterIntroduces']) && $_GET['withFooterIntroduces'] === 'true'
+    	? getFilter('Introduce') // hack, objectservice doesn't work without filter so we add fake one
+    	: getFilter('Introduce', 'display', '=', 'navbar');
     
     $res = ObjectService::getObjects($params);
     if (!$res->success) {
@@ -106,6 +108,21 @@ function getNavBar() {
     $navbar->introduces = $res->result;
     
     return $navbar;
+}
+
+function getFooterIntroduces() {
+	$params = new \stdClass();
+	$params->model = 'Introduce';
+	$params->properties = ['title', 'display'];
+	
+	$params->filter = getFilter('Introduce', 'display', '=', 'footer');
+	
+	$res = ObjectService::getObjects($params);
+	if (!$res->success) {
+		throw new HttpException(json_encode($res), 500);
+	}
+	
+	return $res->result;
 }
 
 function startAdminSession() {
@@ -172,10 +189,13 @@ function get($explodedRoute) {
             break;
         case 'MainServices':
         	$response = getMainServices();
-            break;
+        	break;
         case 'SubServices':
-            $response = getSubServices($explodedRoute[1]);
-            break;
+        	$response = getSubServices($explodedRoute[1]);
+        	break;
+        case 'FooterIntroduces':
+        	$response = getFooterIntroduces();
+        	break;
         case 'MainService':
         case 'SubService':
         case 'Introduce':

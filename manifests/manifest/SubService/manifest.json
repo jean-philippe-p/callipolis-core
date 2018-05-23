@@ -23,6 +23,10 @@
             }
         },
         {
+            "name": "rate",
+            "type": "float"
+        },
+        {
             "name": "mainService",
             "type": "\\MainService",
             "is_foreign": true
