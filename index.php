@@ -23,9 +23,7 @@ Config::setLoadPath("./config/config.json");
 function getMainServices() {
     $params = new \stdClass();
     $params->model = 'MainService';
-    
-    // hack, objectservice doesn't work without filter so we add fake one
-    $params->filter = getFilter();
+    $params->filter = getFilter('MainService', 'available', '=', true);
     
     $res = ObjectService::getObjects($params);
     if (!$res->success) {
@@ -37,8 +35,13 @@ function getMainServices() {
 function getSubServices($mainServiceId) {
     $params = new \stdClass();
     $params->model = 'SubService';
-    $params->filter = getFilter('SubService', 'mainService', '=', $mainServiceId);
     $params->properties = ['title', 'summary', 'mainService', 'logo', 'color'];
+    $params->filter = new \stdClass();
+    $params->filter->type = 'conjunction';
+    $params->filter->elements = [
+    		getFilter('SubService', 'available', '=', true),
+    		getFilter('SubService', 'mainService', '=', $mainServiceId),
+    ];
     
     $res = ObjectService::getObjects($params);
     if (!$res->success) {
@@ -66,8 +69,7 @@ function getNavBar() {
     $params = new \stdClass();
     $params->model = 'MainService';
     $params->properties = ['title'];
-    
-    $params->filter = getFilter(); // hack, objectservice doesn't work without filter so we add fake one
+    $params->filter = getFilter('MainService', 'available', '=', true);
     
     $res = ObjectService::getObjects($params);
     if (!$res->success) {
@@ -80,15 +82,19 @@ function getNavBar() {
         $navbar->services[$mainService->id]->{$propertySubServices} = [];
     }
     
+    $params = new \stdClass();
     $params->model = 'SubService';
     $params->properties = ['title', 'mainService', 'keyWords'];
+    $params->filter = getFilter('SubService', 'available', '=', true);
     $res = ObjectService::getObjects($params);
     if (!$res->success) {
     	throw new HttpException(json_encode($res), 500);
     }
     $propertyMainService = ModelManager::getInstance()->getInstanceModel('SubService')->getProperty('mainService', true)->getName();
     foreach ($res->result as $subService) {
-        $navbar->services[$subService->{$propertyMainService}]->$propertySubServices[] = $subService;
+    	if (isset($navbar->services[$subService->{$propertyMainService}])) {
+        	$navbar->services[$subService->{$propertyMainService}]->$propertySubServices[] = $subService;
+    	}
     }
     $navbar->services = array_values($navbar->services);
     
@@ -98,7 +104,7 @@ function getNavBar() {
     $params->properties = ['title', 'display'];
     
     $params->filter = isset($_GET['withFooterIntroduces']) && $_GET['withFooterIntroduces'] === 'true'
-    	? getFilter('Introduce') // hack, objectservice doesn't work without filter so we add fake one
+    	? getFilter('Introduce', 'title', '<>', 'plop') // hack, objectservice doesn't work without filter so we add fake one
     	: getFilter('Introduce', 'display', '=', 'navbar');
     
     $res = ObjectService::getObjects($params);
@@ -157,7 +163,7 @@ function startAdminSession() {
 	return $token;
 }
 
-function getFilter($model = 'MainService', $property = 'title', $operator = '<>', $value = 'plop') {
+function getFilter($model, $property, $operator, $value) {
     $filter = new stdClass();
     $filter->model = $model;
     $filter->property = $property;
@@ -227,12 +233,58 @@ function post($explodedRoute) {
 	
 	$model  = ModelManager::getInstance()->getInstanceModel($explodedRoute[0]);
 	$interfacer = new AssocArrayInterfacer();
+	$interfacer->setFlagObjectAsLoaded(false);
 	$object = $interfacer->import($post, $model);
+	
+	if ($object->hasCompleteId()) {
+		$idProperties = [];
+		foreach ($model->getIdProperties() as $property) {
+			$idProperties[] = $property->getName();
+		}
+		$code = is_null($model->loadObject($object->getId(), $idProperties)) ? 201 : 200;
+	} else {
+		$code = 201;
+	}
 	
 	$object->save();
 	$model->loadAndFillObject($object, null, true);
 	
 	header('Content-Type: application/json');
+	http_response_code($code);
+	echo json_encode($interfacer->export($object));
+}
+
+function delete($explodedRoute) {
+	if (!isset($explodedRoute[0]) || !isset($explodedRoute[1])) {
+		throw new HttpException('id must be an integer', 400);
+	}
+	$modelName = $explodedRoute[0];
+	$id = $explodedRoute[1];
+	if (!ctype_digit($id)) {
+		throw new HttpException('id must be an integer', 400);
+	}
+	$id = (integer) $id;
+	validateToken();
+	$model  = ModelManager::getInstance()->getInstanceModel($modelName);
+	
+	if ($model->getName() !== 'MainService' && $model->getName() !== 'SubService') {
+		throw new HttpException("method not handle for model {$model->getName()}", 501);
+	}
+	$idProperties = [];
+	foreach ($model->getIdProperties() as $property) {
+		$idProperties[] = $property->getName();
+	}
+	$object = $model->loadObject($id, ['available']);
+	if (is_null($object)) {
+		throw new HttpException("{$model->getName()} with id '{$id} not found", 404);
+	}
+	if ($object->getValue('available') === true) {
+		$object->setValue('available', false);
+		$object->save();
+	}
+	
+	header('Content-Type: application/json');
+	$interfacer = new AssocArrayInterfacer();
 	echo json_encode($interfacer->export($object));
 }
 
@@ -263,7 +315,7 @@ if (strpos($route, '?') !== false) {
 	$route = strstr($route, '?', true);
 }
 
-//echo $route."<br/>";
+// trigger_error($route);
 
 $explodedRoute = explode('/', $route);
 $prefixAPI = array_shift($explodedRoute);
@@ -280,6 +332,7 @@ if (empty($explodedRoute)) {
 // TODO remove
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Headers: Content-Type');
+header('Access-Control-Allow-Methods: POST, GET, DELETE, OPTIONS');
 
 try {
 	if ($explodedRoute[0] == 'upload') {
@@ -320,6 +373,9 @@ try {
 				break;
 			case 'POST':
 				post($explodedRoute);
+				break;
+			case 'DELETE':
+				delete($explodedRoute);
 				break;
 			case 'OPTIONS':
 				header('Content-Type: application/json');

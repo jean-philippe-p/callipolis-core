@@ -22,6 +22,10 @@
             "name": "color",
             "type": "string",
             "pattern": "color"
+        },
+        {
+            "name": "available",
+            "type": "boolean"
         }
     ]
 }
