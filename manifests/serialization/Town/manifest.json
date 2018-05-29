@@ -1,0 +1,15 @@
+{
+    "version": "2.0",
+    "serialization": {
+        "type": "sqlTable",
+        "value": {
+            "database":"1",
+            "name":"town"
+        }
+    },
+    "properties": {
+        "codePostal": {
+            "serializationName": "code_postal"
+        }
+    }
+}

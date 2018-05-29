@@ -7,6 +7,8 @@ use Callipolis\Exception\HttpException;
 use Comhon\Interfacer\AssocArrayInterfacer;
 use Comhon\Object\Object;
 use Comhon\Serialization\SqlTable;
+use Comhon\Database\DatabaseController;
+use Comhon\Model\ModelArray;
 
 require_once 'vendor/autoload.php';
 
@@ -116,6 +118,22 @@ function getNavBar() {
     return $navbar;
 }
 
+function getTowns() {
+	if (!isset($_GET['search']) || strlen($_GET['search']) < 3) {
+		throw new HttpException("lissing or malformed search", 400);
+	}
+	$database = DatabaseController::getInstanceWithDataBaseId('1');
+	$query =  'SELECT * FROM town WHERE name LIKE ? OR code_postal LIKE ?;';
+	$statement = $database->executeSimpleQuery($query, [$_GET['search'].'%', $_GET['search'].'%']);
+	$interfacer = new AssocArrayInterfacer();
+	
+	$model = new ModelArray(ModelManager::getInstance()->getInstanceModel('Town'), 'town');
+	$interfacer->setSerialContext(true);
+	$objects = $model->import($statement->fetchAll(), $interfacer);
+	$interfacer->setSerialContext(false);
+	return $interfacer->export($objects);
+}
+
 function getFooterIntroduces() {
 	$params = new \stdClass();
 	$params->model = 'Introduce';
@@ -201,6 +219,9 @@ function get($explodedRoute) {
         	break;
         case 'FooterIntroduces':
         	$response = getFooterIntroduces();
+        	break;
+        case 'Towns':
+        	$response = getTowns();
         	break;
         case 'MainService':
         case 'SubService':

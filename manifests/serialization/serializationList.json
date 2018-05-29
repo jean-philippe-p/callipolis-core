@@ -5,6 +5,7 @@
 		"SubService" : "SubService/manifest.json",
 		"Contact"    : "Contact/manifest.json",
 		"Admin"      : "Admin/manifest.json",
-		"Introduce"  : "Introduce/manifest.json"
+		"Introduce"  : "Introduce/manifest.json",
+		"Town"       : "Town/manifest.json"
 	}
 }
