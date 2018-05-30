@@ -280,6 +280,9 @@ function post($explodedRoute) {
 	
 	header('Content-Type: application/json');
 	http_response_code($code);
+	if ($explodedRoute[0] == 'Contact' && is_null($object->getValue("town")->getValue('name'))) {
+		$object->deleteValue("town");
+	}
 	echo json_encode($interfacer->export($object));
 }
 
