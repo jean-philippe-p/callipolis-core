@@ -7,6 +7,12 @@
     "properties": {
         "creationDate": {
             "serializationName": "creation_date"
+        },
+        "town": {
+            "serializationNames": {
+                "name": "town_name",
+                "codePostal": "town_code_postal"
+            }
         }
     }
 }

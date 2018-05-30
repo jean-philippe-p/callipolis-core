@@ -16,7 +16,13 @@
         },
         {
             "name": "service",
-            "type": "string"
+            "type": "\\SubService",
+            "is_foreign": true
+        },
+        {
+            "name": "town",
+            "type": "\\Town",
+            "is_foreign": true
         },
         {
             "name": "informations",

@@ -127,9 +127,12 @@ function getTowns() {
 	$statement = $database->executeSimpleQuery($query, [$_GET['search'].'%', $_GET['search'].'%']);
 	$interfacer = new AssocArrayInterfacer();
 	
-	$model = new ModelArray(ModelManager::getInstance()->getInstanceModel('Town'), 'town');
+	$model = ModelManager::getInstance()->getInstanceModel('Town');
+	$modelArray = new ModelArray($model, 'town');
 	$interfacer->setSerialContext(true);
-	$objects = $model->import($statement->fetchAll(), $interfacer);
+	$rows = $statement->fetchAll();
+	SqlTable::castStringifiedColumns($rows, $model);
+	$objects = $modelArray->import($rows, $interfacer);
 	$interfacer->setSerialContext(false);
 	return $interfacer->export($objects);
 }
@@ -247,7 +250,12 @@ function get($explodedRoute) {
 }
 
 function post($explodedRoute) {
-	validateToken();
+	$publicPost = ['Contact'];
+	
+	if (!in_array($explodedRoute[0], $publicPost)) {
+		validateToken();
+	}
+	
 	$response = null;
 	$isFile = false;
 	$post = json_decode(file_get_contents('php://input'), true);
@@ -415,4 +423,5 @@ try {
     http_response_code(500);
     trigger_error($e->getCode());
     trigger_error($e->getMessage());
+    trigger_error($e->getTraceAsString());
 }
