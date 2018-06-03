@@ -61,6 +61,15 @@ function getResources($modelName, $properties = null) {
 		$params->properties = $properties;
 	}
 	
+	// values order
+	if (isset($get['order'])) {
+		$params->order = json_decode($get['order']);
+		if (!is_array($params->order)) {
+			throw new HttpException("malformed order", 400);
+		}
+		unset($get['order']);
+	}
+	
 	// set filter to apply
 	$filters = [];
 	$interfacer = new AssocArrayNoScalarTypedInterfacer();
