@@ -153,9 +153,11 @@ function getNavBar() {
     $params->model = 'Introduce';
     $params->properties = ['title', 'display'];
     
-    $params->filter = isset($_GET['withFooterIntroduces']) && $_GET['withFooterIntroduces'] === 'true'
-    	? getFilter('Introduce', 'title', '<>', 'plop') // hack, objectservice doesn't work without filter so we add fake one
-    	: getFilter('Introduce', 'display', '=', 'navbar');
+    $display = ['navbar'];
+    if (isset($_GET['display'])) {
+    	$display = array_merge($display, json_decode($_GET['display']));
+    }
+    $params->filter = getFilter('Introduce', 'display', '=', $display);
     
     $res = ObjectService::getObjects($params);
     if (!$res->success) {
