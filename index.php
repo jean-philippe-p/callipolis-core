@@ -9,6 +9,9 @@ use Comhon\Object\Object;
 use Comhon\Serialization\SqlTable;
 use Comhon\Database\DatabaseController;
 use Comhon\Model\ModelArray;
+use Comhon\Model\SimpleModel;
+use Comhon\Model\Property\ForeignProperty;
+use Comhon\Interfacer\AssocArrayNoScalarTypedInterfacer;
 
 require_once 'vendor/autoload.php';
 
@@ -22,34 +25,79 @@ Config::setLoadPath("./config/config.json");
 |                   functions                    |
 \************************************************/
 
-function getMainServices() {
-    $params = new \stdClass();
-    $params->model = 'MainService';
-    $params->filter = getFilter('MainService', 'available', '=', true);
-    
-    $res = ObjectService::getObjects($params);
-    if (!$res->success) {
-    	throw new HttpException(json_encode($res), 500);
-    }
-    return $res->result;
-}
 
-function getSubServices($mainServiceId) {
-    $params = new \stdClass();
-    $params->model = 'SubService';
-    $params->properties = ['title', 'summary', 'mainService', 'logo', 'color'];
-    $params->filter = new \stdClass();
-    $params->filter->type = 'conjunction';
-    $params->filter->elements = [
-    		getFilter('SubService', 'available', '=', true),
-    		getFilter('SubService', 'mainService', '=', $mainServiceId),
-    ];
-    
-    $res = ObjectService::getObjects($params);
-    if (!$res->success) {
-    	throw new HttpException(json_encode($res), 500);
-    }
-    return $res->result;
+/**
+ * 
+ * @param string $modelName
+ * @param string[] $properties
+ * @throws HttpException
+ * @return unknown
+ */
+function getResources($modelName, $properties = null) {
+	$get = $_GET;
+	$model = ModelManager::getInstance()->getInstanceModel($modelName);
+	$params = new \stdClass();
+	$params->model = $modelName;
+	
+	// properties to retrieve
+	$tempProperties = [];
+	if (isset($get['properties'])) {
+		$requestProperties = json_decode($get['properties']);
+		if (is_null($properties)) {
+			$tempProperties = $requestProperties;
+		} else {
+			foreach ($requestProperties as $requestProperty) {
+				if (in_array($requestProperty, $properties)) {
+					$tempProperties[] = $requestProperty;
+				}
+			}
+		}
+		unset($get['properties']);
+	}
+	if (count($tempProperties) > 0) {
+		$params->properties = $tempProperties;
+	}elseif (!is_null($properties)) {
+		$params->properties = $properties;
+	}
+	
+	// set filter to apply
+	$filters = [];
+	$interfacer = new AssocArrayNoScalarTypedInterfacer();
+	foreach ($get as $propertyName => $value) {
+		$property = $model->getProperty($propertyName);
+		if (is_null($property)) {
+			throw new HttpException("Unknown property $propertyName", 400);
+		}
+		if (!($property instanceof ForeignProperty)) {
+			if (!($property->getModel() instanceof SimpleModel)) {
+				throw new HttpException("Not supported property $propertyName", 400);
+			}
+			$value = $property->getModel()->importSimple($value, $interfacer);
+		}
+		$filters[] = getFilter($modelName, $propertyName, '=', $value);
+		
+	}
+	if (count($filters) === 0) {
+		// hack comhon doesn't work without filter
+		$properties = $model->getProperties();
+		$params->filter = new \stdClass();
+		$params->filter->type = 'disjunction';
+		$params->filter->elements = [
+				getFilter($modelName, current($properties)->getName(), '=', null),
+				getFilter($modelName, current($properties)->getName(), '<>', null)
+		];
+	} elseif (count($filters) === 1) {
+		$params->filter = $filters[0];
+	} else {
+		$params->filter = new \stdClass();
+		$params->filter->type = 'conjunction';
+		$params->filter->elements = $filters;
+	}
+	$res = ObjectService::getObjects($params);
+	if (!$res->success) {
+		throw new HttpException(json_encode($res), 500);
+	}
+	return $res->result;
 }
 
 function getResource($resource, $id) {
@@ -137,21 +185,6 @@ function getTowns() {
 	return $interfacer->export($objects);
 }
 
-function getFooterIntroduces() {
-	$params = new \stdClass();
-	$params->model = 'Introduce';
-	$params->properties = ['title', 'display'];
-	
-	$params->filter = getFilter('Introduce', 'display', '=', 'footer');
-	
-	$res = ObjectService::getObjects($params);
-	if (!$res->success) {
-		throw new HttpException(json_encode($res), 500);
-	}
-	
-	return $res->result;
-}
-
 function startAdminSession() {
 	$post = json_decode(file_get_contents('php://input'), true);
 	
@@ -214,17 +247,20 @@ function get($explodedRoute) {
         case 'Navbar':
             $response = getNavBar();
             break;
-        case 'MainServices':
-        	$response = getMainServices();
-        	break;
-        case 'SubServices':
-        	$response = getSubServices($explodedRoute[1]);
-        	break;
-        case 'FooterIntroduces':
-        	$response = getFooterIntroduces();
-        	break;
         case 'Towns':
         	$response = getTowns();
+        	break;
+        case 'MainServices':
+        	$response = getResources('MainService');
+        	break;
+        case 'Contacts':
+        	$response = getResources('Contact');
+        	break;
+        case 'SubServices':
+        	$response = getResources('SubService', ['title', 'summary', 'mainService', 'logo', 'color']);
+        	break;
+        case 'Introduces':
+        	$response = getResources('Introduce', ['title', 'display']);
         	break;
         case 'MainService':
         case 'SubService':
@@ -280,9 +316,6 @@ function post($explodedRoute) {
 	
 	header('Content-Type: application/json');
 	http_response_code($code);
-	if ($explodedRoute[0] == 'Contact' && is_null($object->getValue("town")->getValue('name'))) {
-		$object->deleteValue("town");
-	}
 	echo json_encode($interfacer->export($object));
 }
 
