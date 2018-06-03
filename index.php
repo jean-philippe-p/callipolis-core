@@ -260,7 +260,7 @@ function get($explodedRoute) {
         	$response = getResources('SubService', ['title', 'summary', 'mainService', 'logo', 'color']);
         	break;
         case 'Introduces':
-        	$response = getResources('Introduce', ['title', 'display']);
+        	$response = getResources('Introduce', ['title', 'display', 'text']);
         	break;
         case 'MainService':
         case 'SubService':
