@@ -12,6 +12,7 @@ use Comhon\Model\ModelArray;
 use Comhon\Model\SimpleModel;
 use Comhon\Model\Property\ForeignProperty;
 use Comhon\Interfacer\AssocArrayNoScalarTypedInterfacer;
+use Comhon\Model\MainModel;
 
 require_once 'vendor/autoload.php';
 
@@ -301,6 +302,10 @@ function post($explodedRoute) {
 	$model  = ModelManager::getInstance()->getInstanceModel($explodedRoute[0]);
 	$interfacer = new AssocArrayInterfacer();
 	$interfacer->setFlagObjectAsLoaded(false);
+	
+	/**
+	 * @var \Comhon\Object\Object $object
+	 */
 	$object = $interfacer->import($post, $model);
 	
 	if ($object->hasCompleteId()) {
@@ -313,7 +318,9 @@ function post($explodedRoute) {
 		$code = 201;
 	}
 	
-	$object->save();
+	if ($object->save() === 0 && $code === 201) {
+		throw new HttpException('malformed request', 400);
+	}
 	$model->loadAndFillObject($object, null, true);
 	
 	header('Content-Type: application/json');
@@ -322,33 +329,31 @@ function post($explodedRoute) {
 }
 
 function delete($explodedRoute) {
+	validateToken();
+	$handled = ['Introduce'];
 	if (!isset($explodedRoute[0]) || !isset($explodedRoute[1])) {
 		throw new HttpException('id must be an integer', 400);
 	}
 	$modelName = $explodedRoute[0];
 	$id = $explodedRoute[1];
+	if (!in_array($modelName, $handled)) {
+		throw new HttpException('delete not handled for model '.$model->getName(), 501);
+	}
 	if (!ctype_digit($id)) {
 		throw new HttpException('id must be an integer', 400);
 	}
 	$id = (integer) $id;
-	validateToken();
 	$model  = ModelManager::getInstance()->getInstanceModel($modelName);
 	
-	if ($model->getName() !== 'MainService' && $model->getName() !== 'SubService') {
-		throw new HttpException("method not handle for model {$model->getName()}", 501);
-	}
 	$idProperties = [];
 	foreach ($model->getIdProperties() as $property) {
 		$idProperties[] = $property->getName();
 	}
-	$object = $model->loadObject($id, ['available']);
+	$object = $model->loadObject($id, $idProperties);
 	if (is_null($object)) {
 		throw new HttpException("{$model->getName()} with id '{$id} not found", 404);
 	}
-	if ($object->getValue('available') === true) {
-		$object->setValue('available', false);
-		$object->save();
-	}
+	$object->delete();
 	
 	header('Content-Type: application/json');
 	$interfacer = new AssocArrayInterfacer();
