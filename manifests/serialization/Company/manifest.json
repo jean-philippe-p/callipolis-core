@@ -1,0 +1,10 @@
+{
+    "version": "2.0",
+    "serialization": {
+        "type": "jsonFile",
+        "value": {
+            "saticPath": "\/home\/callipolvo\/www\/core\/data\/company",
+            "staticName": "company.json"
+        }
+    }
+}

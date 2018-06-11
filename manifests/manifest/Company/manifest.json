@@ -1,0 +1,35 @@
+{
+    "version": "2.0",
+    "properties": [
+        {
+            "name": "id",
+            "type": "integer",
+            "is_id": true
+        },
+        {
+            "name": "phone",
+            "type": "string"
+        },
+        {
+            "name": "email",
+            "type": "string",
+            "pattern": "email"
+        },
+        {
+            "name": "address",
+            "type": "string"
+        },
+        {
+            "name": "help",
+            "type": "string"
+        },
+        {
+            "name": "mainTowns",
+            "type": "array",
+            "values": {
+                "type": "string",
+                "name": "mainTown"
+            }
+        }
+    ]
+}

@@ -277,6 +277,7 @@ function get($explodedRoute) {
         case 'MainService':
         case 'SubService':
         case 'Introduce':
+        case 'Company':
         	$response = getResource($explodedRoute[0], $explodedRoute[1]);
             break;
         case 'Logo':
@@ -322,7 +323,11 @@ function post($explodedRoute) {
 		foreach ($model->getIdProperties() as $property) {
 			$idProperties[] = $property->getName();
 		}
-		$code = is_null($model->loadObject($object->getId(), $idProperties)) ? 201 : 200;
+		if ($model->getSerialization() instanceof SqlTable) {
+			$code = is_null($model->loadObject($object->getId(), $idProperties)) ? 201 : 200;
+		} else {
+			$code = 200;
+		}
 	} else {
 		$code = 201;
 	}

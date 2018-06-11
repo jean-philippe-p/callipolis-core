@@ -6,6 +6,7 @@
 		"Contact"    : "Contact/manifest.json",
 		"Admin"      : "Admin/manifest.json",
 		"Introduce"  : "Introduce/manifest.json",
-		"Town"       : "Town/manifest.json"
+		"Town"       : "Town/manifest.json",
+		"Company"    : "Company/manifest.json"
 	}
 }
