@@ -175,6 +175,20 @@ function getNavBar() {
     }
     $navbar->introduces = $res->result;
     
+    // retrieve carousel
+    if (isset($_GET['carousel']) && $_GET['carousel'] === 'true') {
+        $params = new \stdClass();
+        $params->model = 'CarouselPart';
+        $params->properties = ['title'];
+        $params->filter = getFilter('CarouselPart', 'title', '<>', 'plop');
+        
+        $res = ObjectService::getObjects($params);
+        if (!$res->success) {
+            throw new HttpException(json_encode($res), 500);
+        }
+        $navbar->carousel = $res->result;
+    }
+    
     return $navbar;
 }
 
@@ -348,14 +362,14 @@ function post($explodedRoute) {
 
 function delete($explodedRoute) {
 	validateToken();
-	$handled = ['Introduce'];
+	$handled = ['Introduce', 'CarouselPart'];
 	if (!isset($explodedRoute[0]) || !isset($explodedRoute[1])) {
 		throw new HttpException('id must be an integer', 400);
 	}
 	$modelName = $explodedRoute[0];
 	$id = $explodedRoute[1];
 	if (!in_array($modelName, $handled)) {
-		throw new HttpException('delete not handled for model '.$model->getName(), 501);
+	    throw new HttpException('delete not handled for model '.$modelName, 501);
 	}
 	if (!ctype_digit($id)) {
 		throw new HttpException('id must be an integer', 400);
