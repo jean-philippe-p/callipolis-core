@@ -1,0 +1,10 @@
+{
+    "version": "2.0",
+    "serialization": {
+        "type": "sqlTable",
+        "value": {
+            "database":"1",
+            "name":"carousel_part"
+        }
+    }
+}

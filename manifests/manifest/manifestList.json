@@ -1,13 +1,14 @@
 {
 	"version": "2.0",
 	"list": {
-		"Service"    : "Service/manifest.json",
-		"MainService": "MainService/manifest.json",
-		"SubService" : "SubService/manifest.json",
-		"Contact"    : "Contact/manifest.json",
-		"Admin"      : "Admin/manifest.json",
-		"Introduce"  : "Introduce/manifest.json",
-		"Town"       : "Town/manifest.json",
-		"Company"    : "Company/manifest.json"
+		"Service"      : "Service/manifest.json",
+		"MainService"  : "MainService/manifest.json",
+		"SubService"   : "SubService/manifest.json",
+		"Contact"      : "Contact/manifest.json",
+		"Admin"        : "Admin/manifest.json",
+		"Introduce"    : "Introduce/manifest.json",
+		"Town"         : "Town/manifest.json",
+		"Company"      : "Company/manifest.json",
+		"CarouselPart" : "CarouselPart/manifest.json"
 	}
 }

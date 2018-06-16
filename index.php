@@ -272,12 +272,16 @@ function get($explodedRoute) {
         	$response = getResources('SubService', ['title', 'summary', 'mainService', 'logo', 'color']);
         	break;
         case 'Introduces':
-        	$response = getResources('Introduce', ['title', 'display', 'text']);
-        	break;
+            $response = getResources('Introduce', ['title', 'display', 'text']);
+            break;
+        case 'Carousel':
+            $response = getResources('CarouselPart');
+            break;
         case 'MainService':
         case 'SubService':
         case 'Introduce':
         case 'Company':
+        case 'CarouselPart':
         	$response = getResource($explodedRoute[0], $explodedRoute[1]);
             break;
         case 'Logo':
