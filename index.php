@@ -335,7 +335,7 @@ function get($explodedRoute) {
         case 'Company':
         case 'CarouselPart':
         case 'Article':
-        	$response = getResource($explodedRoute[0], $explodedRoute[1]);
+        	$response = getResource($explodedRoute[0], urldecode($explodedRoute[1]));
             break;
         case 'Logo':
             header('Content-Type: image/png');
