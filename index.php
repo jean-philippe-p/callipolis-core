@@ -31,11 +31,12 @@ Config::setLoadPath("./config/config.json");
 /**
  * 
  * @param string $modelName
+ * @param integer $pagination
  * @param string[] $properties
  * @throws HttpException
  * @return unknown
  */
-function getResources($modelName, $properties = null) {
+function getResources($modelName, $pagination = null, $properties = null) {
 	$get = $_GET;
 	$model = ModelManager::getInstance()->getInstanceModel($modelName);
 	$params = new \stdClass();
@@ -63,6 +64,10 @@ function getResources($modelName, $properties = null) {
 	}
 	
 	// values order
+	if (!is_null($pagination)) {
+		$params->maxLength = 10;
+		$params->offset= $pagination * 10;
+	}
 	if (isset($get['order'])) {
 		$params->order = json_decode($get['order']);
 		if (!is_array($params->order)) {
@@ -312,22 +317,22 @@ function get($explodedRoute) {
         	$response = getTowns();
         	break;
         case 'MainServices':
-        	$response = getResources('MainService');
+        	$response = getResources('MainService', getPagination($explodedRoute));
         	break;
         case 'Contacts':
-        	$response = getResources('Contact');
+        	$response = getResources('Contact', getPagination($explodedRoute));
         	break;
         case 'SubServices':
-        	$response = getResources('SubService', ['title', 'summary', 'mainService', 'logo', 'color']);
+        	$response = getResources('SubService', getPagination($explodedRoute), ['title', 'summary', 'mainService', 'logo', 'color']);
         	break;
         case 'Introduces':
-            $response = getResources('Introduce', ['title', 'display', 'text']);
+        	$response = getResources('Introduce', getPagination($explodedRoute), ['title', 'display', 'text']);
             break;
         case 'Carousel':
-            $response = getResources('CarouselPart');
+        	$response = getResources('CarouselPart', getPagination($explodedRoute));
             break;
         case 'Articles':
-        	$response = getResources('Article');
+        	$response = getResources('Article', getPagination($explodedRoute));
         	break;
         case 'MainService':
         case 'SubService':
@@ -353,6 +358,17 @@ function get($explodedRoute) {
         header('Content-Type: application/json');
         echo json_encode($response);
     }
+}
+
+function getPagination($explodedRoute) {
+	$pagination = null;
+	if (isset($explodedRoute[1])) {
+		if (!ctype_digit($explodedRoute[1])) {
+			throw new HttpException('malformed pagination', 400);
+		}
+		$pagination = (integer) $explodedRoute[1];
+	}
+	return $pagination;
 }
 
 function post($explodedRoute) {
