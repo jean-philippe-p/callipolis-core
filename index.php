@@ -201,7 +201,7 @@ function getNavBar() {
     	$params = new \stdClass();
     	$params->model = 'CarouselPart';
     	$params->properties = ['title'];
-    	$params->filter = getFilter('CarouselPart', 'title', '<>', 'plop');
+    	$params->filter = getFilter('CarouselPart', 'id', '<>', 0);
     	
     	$res = ObjectService::getObjects($params);
     	if (!$res->success) {
@@ -215,7 +215,7 @@ function getNavBar() {
     	$params = new \stdClass();
     	$params->model = 'Article';
     	$params->properties = ['id'];
-    	$params->filter = getFilter('Article', 'text', '<>', 'plop');
+    	$params->filter = getFilter('Article', 'id', '<>', 'plop');
     	
     	$res = ObjectService::getObjects($params);
     	if (!$res->success) {
