@@ -13,6 +13,7 @@ use Comhon\Model\SimpleModel;
 use Comhon\Model\Property\ForeignProperty;
 use Comhon\Interfacer\AssocArrayNoScalarTypedInterfacer;
 use Comhon\Model\MainModel;
+use Comhon\Model\ModelInteger;
 
 require_once 'vendor/autoload.php';
 
@@ -78,11 +79,24 @@ function getResources($modelName, $properties = null) {
 		if (is_null($property)) {
 			throw new HttpException("Unknown property $propertyName", 400);
 		}
+		if (substr($value, 0, 1) === '[') {
+			$tempValue = json_decode($value);
+			if ($tempValue !== null && $tempValue !== false) {
+				$value = $tempValue;
+			}
+			
+		}
 		if (!($property instanceof ForeignProperty)) {
 			if (!($property->getModel() instanceof SimpleModel)) {
 				throw new HttpException("Not supported property $propertyName", 400);
 			}
-			$value = $property->getModel()->importSimple($value, $interfacer);
+			if (is_array($value)) {
+				foreach ($value as &$subValues) {
+					$subValues = $property->getModel()->importSimple($subValues, $interfacer);
+				}
+			} else {
+				$value = $property->getModel()->importSimple($value, $interfacer);
+			}
 		}
 		$filters[] = getFilter($modelName, $propertyName, '=', $value);
 		
@@ -111,15 +125,22 @@ function getResources($modelName, $properties = null) {
 }
 
 function getResource($resource, $id) {
-	if (!ctype_digit($id)) {
-        throw new HttpException('id must be an integer', 400);
+    $model = ModelManager::getInstance()->getInstanceModel($resource);
+    $idProperties = $model->getIdProperties();
+    if (count($idProperties) !== 1) {
+    	throw new HttpException('id property must be unique', 400);
     }
-    $subServiceModel = ModelManager::getInstance()->getInstanceModel($resource);
-    $subService = $subServiceModel->loadObject((integer) $id);
-    if (is_null($subService)) {
+    if (current($idProperties)->getModel() instanceof ModelInteger) {
+    	if (!ctype_digit($id)) {
+    		throw new HttpException('id must be an integer', 400);
+    	}
+    	$id = (integer) $id;
+    }
+    $object = $model->loadObject($id);
+    if (is_null($object)) {
     	throw new HttpException("$resource $id not found", 404);
     }
-    return $subService->export(new StdObjectInterfacer());
+    return $object->export(new StdObjectInterfacer());
 }
 
 function getNavBar() {
@@ -177,16 +198,30 @@ function getNavBar() {
     
     // retrieve carousel
     if (isset($_GET['carousel']) && $_GET['carousel'] === 'true') {
-        $params = new \stdClass();
-        $params->model = 'CarouselPart';
-        $params->properties = ['title'];
-        $params->filter = getFilter('CarouselPart', 'title', '<>', 'plop');
-        
-        $res = ObjectService::getObjects($params);
-        if (!$res->success) {
-            throw new HttpException(json_encode($res), 500);
-        }
-        $navbar->carousel = $res->result;
+    	$params = new \stdClass();
+    	$params->model = 'CarouselPart';
+    	$params->properties = ['title'];
+    	$params->filter = getFilter('CarouselPart', 'title', '<>', 'plop');
+    	
+    	$res = ObjectService::getObjects($params);
+    	if (!$res->success) {
+    		throw new HttpException(json_encode($res), 500);
+    	}
+    	$navbar->carousel = $res->result;
+    }
+    
+    // retrieve articles
+    if (isset($_GET['articles']) && $_GET['articles'] === 'true') {
+    	$params = new \stdClass();
+    	$params->model = 'Article';
+    	$params->properties = ['id'];
+    	$params->filter = getFilter('Article', 'text', '<>', 'plop');
+    	
+    	$res = ObjectService::getObjects($params);
+    	if (!$res->success) {
+    		throw new HttpException(json_encode($res), 500);
+    	}
+    	$navbar->articles = $res->result;
     }
     
     return $navbar;
@@ -291,11 +326,15 @@ function get($explodedRoute) {
         case 'Carousel':
             $response = getResources('CarouselPart');
             break;
+        case 'Articles':
+        	$response = getResources('Article');
+        	break;
         case 'MainService':
         case 'SubService':
         case 'Introduce':
         case 'Company':
         case 'CarouselPart':
+        case 'Article':
         	$response = getResource($explodedRoute[0], $explodedRoute[1]);
             break;
         case 'Logo':
@@ -343,14 +382,17 @@ function post($explodedRoute) {
 		}
 		if ($model->getSerialization() instanceof SqlTable) {
 			$code = is_null($model->loadObject($object->getId(), $idProperties)) ? 201 : 200;
+			$operation = $code === 201 ? SqlTable::CREATE : SqlTable::UPDATE;
 		} else {
 			$code = 200;
+			$operation = null;
 		}
 	} else {
 		$code = 201;
+		$operation = SqlTable::CREATE;
 	}
 	
-	if ($object->save() === 0 && $code === 201) {
+	if ($object->save($operation) === 0 && $code === 201) {
 		throw new HttpException('malformed request', 400);
 	}
 	$model->loadAndFillObject($object, null, true);
@@ -494,9 +536,11 @@ try {
 	trigger_error($e->getCode());
 	trigger_error($e->getMessage());
 	trigger_error($e->getTraceAsString());
+	file_put_contents('./error.log', $e->getMessage()."\n", FILE_APPEND);
 } catch (Exception $e) {
     http_response_code(500);
     trigger_error($e->getCode());
     trigger_error($e->getMessage());
     trigger_error($e->getTraceAsString());
+    file_put_contents('./error.log', $e->getMessage()."\n", FILE_APPEND);
 }

@@ -9,6 +9,7 @@
 		"Introduce"    : "Introduce/manifest.json",
 		"Town"         : "Town/manifest.json",
 		"Company"      : "Company/manifest.json",
-		"CarouselPart" : "CarouselPart/manifest.json"
+		"CarouselPart" : "CarouselPart/manifest.json",
+		"Article"      : "Article/manifest.json"
 	}
 }

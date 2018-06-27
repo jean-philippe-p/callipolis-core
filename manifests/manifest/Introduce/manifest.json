@@ -16,7 +16,12 @@
         },
         {
             "name": "articles",
-            "type": "string"
+            "type": "array",
+            "values": {
+                "type": "\\Article",
+                "name": "article"
+            },
+            "is_foreign": true
         },
         {
             "name": "important",
@@ -25,7 +30,7 @@
         {
             "name": "display",
             "type": "string",
-            "enum": ["navbar", "footer", "carousel"]
+            "enum": ["navbar", "footer"]
         }
     ]
 }
