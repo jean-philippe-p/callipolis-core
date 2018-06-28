@@ -3,8 +3,20 @@
     "properties": [
         {
             "name": "id",
-            "type": "string",
+            "type": "integer",
             "is_id": true
+        },
+        {
+            "name": "type",
+            "type": "string"
+        },
+        {
+            "name": "numero",
+            "type": "string"
+        },
+        {
+            "name": "date",
+            "type": "string"
         },
         {
             "name": "text",

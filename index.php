@@ -63,11 +63,13 @@ function getResources($modelName, $pagination = null, $properties = null) {
 		$params->properties = $properties;
 	}
 	
-	// values order
+	// limit and offset
 	if (!is_null($pagination)) {
 		$params->maxLength = 10;
 		$params->offset= $pagination * 10;
 	}
+	
+	// values order
 	if (isset($get['order'])) {
 		$params->order = json_decode($get['order']);
 		if (!is_array($params->order)) {
@@ -219,8 +221,13 @@ function getNavBar() {
     if (isset($_GET['articles']) && $_GET['articles'] === 'true') {
     	$params = new \stdClass();
     	$params->model = 'Article';
-    	$params->properties = ['id'];
-    	$params->filter = getFilter('Article', 'id', '<>', 'plop');
+    	$params->properties = ['numero', 'type'];
+    	$params->filter = getFilter('Article', 'id', '<>', 0);
+    	
+    	$orderType = new stdClass();
+    	$orderType->property = 'type';
+    	$orderType->type= 'ASC';
+    	$params->order = [$orderType];
     	
     	$res = ObjectService::getObjects($params);
     	if (!$res->success) {
