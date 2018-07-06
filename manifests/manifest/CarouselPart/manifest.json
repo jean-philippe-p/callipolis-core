@@ -17,6 +17,18 @@
         {
             "name": "image",
             "type": "string"
+        },
+        {
+            "name": "left",
+            "type": "integer"
+        },
+        {
+            "name": "right",
+            "type": "integer"
+        },
+        {
+            "name": "bottom",
+            "type": "integer"
         }
     ]
 }

@@ -427,7 +427,7 @@ function post($explodedRoute) {
 
 function delete($explodedRoute) {
 	validateToken();
-	$handled = ['CarouselPart'];
+	$handled = ['CarouselPart', 'Contact'];
 	if (!isset($explodedRoute[0]) || !isset($explodedRoute[1])) {
 		throw new HttpException('id must be an integer', 400);
 	}
