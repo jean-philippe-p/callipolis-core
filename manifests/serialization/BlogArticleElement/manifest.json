@@ -1,0 +1,11 @@
+{
+    "version": "2.0",
+    "serialization": {
+        "type": "sqlTable",
+        "inheritanceKey": "type",
+        "value": {
+            "database":"1",
+            "name":"blog_article_element"
+        }
+    }
+}

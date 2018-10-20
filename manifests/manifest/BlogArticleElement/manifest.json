@@ -1,0 +1,15 @@
+{
+    "version": "2.0",
+    "properties": [
+        {
+            "name": "id",
+            "type": "integer",
+            "is_id": true
+        },
+        {
+            "name": "parent",
+            "type": "\\BlogArticle",
+            "is_foreign": true
+        }
+    ]
+}

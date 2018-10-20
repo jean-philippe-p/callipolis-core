@@ -10,6 +10,10 @@
 		"Town"         : "Town/manifest.json",
 		"Company"      : "Company/manifest.json",
 		"CarouselPart" : "CarouselPart/manifest.json",
-		"Article"      : "Article/manifest.json"
+		"Article"      : "Article/manifest.json",
+		"BlogArticle"  : "BlogArticle/manifest.json",
+		"BlogArticleElement" : "BlogArticleElement/manifest.json",
+		"BlogArticleChapter" : "BlogArticleChapter/manifest.json",
+		"BlogArticleImage"   : "BlogArticleImage/manifest.json"
 	}
 }

@@ -324,22 +324,20 @@ function get($explodedRoute) {
         	$response = getTowns();
         	break;
         case 'MainServices':
-        	$response = getResources('MainService', getPagination($explodedRoute));
-        	break;
         case 'Contacts':
-        	$response = getResources('Contact', getPagination($explodedRoute));
+        case 'Articles':
+        case 'BlogArticles':
+        case 'BlogArticleElements':
+        	$response = getResources(substr($explodedRoute[0], 0, -1), getPagination($explodedRoute));
         	break;
+        case 'Carousel':
+        	$response = getResources('CarouselPart', getPagination($explodedRoute));
+            break;
         case 'SubServices':
         	$response = getResources('SubService', getPagination($explodedRoute), ['title', 'summary', 'mainService', 'logo', 'color']);
         	break;
         case 'Introduces':
         	$response = getResources('Introduce', getPagination($explodedRoute), ['title', 'display', 'text']);
-            break;
-        case 'Carousel':
-        	$response = getResources('CarouselPart', getPagination($explodedRoute));
-            break;
-        case 'Articles':
-        	$response = getResources('Article', getPagination($explodedRoute));
         	break;
         case 'MainService':
         case 'SubService':
@@ -347,6 +345,8 @@ function get($explodedRoute) {
         case 'Company':
         case 'CarouselPart':
         case 'Article':
+        case 'BlogArticle':
+        case 'BlogArticleElement':
         	$response = getResource($explodedRoute[0], urldecode($explodedRoute[1]));
             break;
         case 'Logo':
