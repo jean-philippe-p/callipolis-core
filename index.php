@@ -14,6 +14,7 @@ use Comhon\Model\Property\ForeignProperty;
 use Comhon\Interfacer\AssocArrayNoScalarTypedInterfacer;
 use Comhon\Model\MainModel;
 use Comhon\Model\ModelInteger;
+use Comhon\Model\Model;
 
 require_once 'vendor/autoload.php';
 
@@ -64,9 +65,15 @@ function getResources($modelName, $pagination = null, $properties = null) {
 	}
 	
 	// limit and offset
+	if (isset($get['limit'])) {
+		$limit = (integer) $get['limit'];
+		unset($get['limit']);
+	} else {
+		$limit = 10;
+	}
 	if (!is_null($pagination)) {
-		$params->maxLength = 10;
-		$params->offset= $pagination * 10;
+		$params->maxLength = $limit;
+		$params->offset= $pagination * $limit;
 	}
 	
 	// values order
@@ -78,7 +85,55 @@ function getResources($modelName, $pagination = null, $properties = null) {
 		unset($get['order']);
 	}
 	
-	// set filter to apply
+	// modify $params object by adding filter to apply
+	setParamsFilter($params, $get, $model);
+	
+	$res = ObjectService::getObjects($params);
+	if (!$res->success) {
+		throw new HttpException(json_encode($res), 500);
+	}
+	return $res->result;
+}
+
+/**
+ *
+ * @param string $modelName
+ * @param integer $pagination
+ * @param string[] $properties
+ * @throws HttpException
+ * @return unknown
+ */
+function getResourcesCount($modelName) {
+	$model = ModelManager::getInstance()->getInstanceModel($modelName);
+	$params = new \stdClass();
+	$params->model = $modelName;
+	
+	// modify $params object by adding filter to apply
+	setParamsFilter($params, $_GET, $model);
+	
+	$res = ObjectService::getObjectsCount($params);
+	file_put_contents('./error.log', "\n-0--\n".json_encode($res)."\n-0--\n", FILE_APPEND);
+	if (!$res->success) {
+		throw new HttpException(json_encode($res), 500);
+	}
+	return $res->result;
+}
+
+/**
+ * modify $params object by adding filter to apply
+ * 
+ * @param \stdClass $params
+ * @param array $get
+ * @param Model $model
+ * @throws HttpException
+ */
+function setParamsFilter($params, $get, Model $model) {
+	$operator = '=';
+	if (isset($get['operator'])) {
+		$operator = $get['operator'];
+		unset($get['operator']);
+	}
+	
 	$filters = [];
 	$interfacer = new AssocArrayNoScalarTypedInterfacer();
 	foreach ($get as $propertyName => $value) {
@@ -105,7 +160,7 @@ function getResources($modelName, $pagination = null, $properties = null) {
 				$value = $property->getModel()->importSimple($value, $interfacer);
 			}
 		}
-		$filters[] = getFilter($modelName, $propertyName, '=', $value);
+		$filters[] = getFilter($model->getName(), $propertyName, $operator, $value);
 		
 	}
 	if (count($filters) === 0) {
@@ -114,8 +169,8 @@ function getResources($modelName, $pagination = null, $properties = null) {
 		$params->filter = new \stdClass();
 		$params->filter->type = 'disjunction';
 		$params->filter->elements = [
-				getFilter($modelName, current($properties)->getName(), '=', null),
-				getFilter($modelName, current($properties)->getName(), '<>', null)
+				getFilter($model->getName(), current($properties)->getName(), '=', null),
+				getFilter($model->getName(), current($properties)->getName(), '<>', null)
 		];
 	} elseif (count($filters) === 1) {
 		$params->filter = $filters[0];
@@ -124,11 +179,6 @@ function getResources($modelName, $pagination = null, $properties = null) {
 		$params->filter->type = 'conjunction';
 		$params->filter->elements = $filters;
 	}
-	$res = ObjectService::getObjects($params);
-	if (!$res->success) {
-		throw new HttpException(json_encode($res), 500);
-	}
-	return $res->result;
 }
 
 function getResource($resource, $id) {
@@ -300,11 +350,11 @@ function getFilter($model, $property, $operator, $value) {
     return $filter;
 }
 
-function getLogo($logoId) {
-    if (!ctype_digit($logoId)) {
+function getImage($imageId) {
+    if (!ctype_digit($imageId)) {
         throw new HttpException('error', 400);
     }
-    $file_af = __DIR__ . "/config/image/$logoId/image.png";
+    $file_af = __DIR__ . "/config/image/$imageId/image.png";
     
     if (!file_exists($file_af)) {
         throw new HttpException('error', 404);
@@ -348,10 +398,11 @@ function get($explodedRoute) {
         case 'BlogArticle':
         case 'BlogArticleElement':
         	$response = getResource($explodedRoute[0], urldecode($explodedRoute[1]));
-            break;
+        	break;
+        case 'Image':
         case 'Logo':
             header('Content-Type: image/png');
-            getLogo($explodedRoute[1]);
+            getImage($explodedRoute[1]);
             $isFile = true;
             break;
         default:
@@ -376,6 +427,27 @@ function getPagination($explodedRoute) {
 		$pagination = (integer) $explodedRoute[1];
 	}
 	return $pagination;
+}
+
+function getCount($explodedRoute) {
+	$response = null;
+	$isFile = false;
+	
+	switch ($explodedRoute[0]) {
+		case 'MainServices':
+		case 'Contacts':
+		case 'Articles':
+		case 'BlogArticles':
+		case 'BlogArticleElements':
+			$response = getResourcesCount(substr($explodedRoute[0], 0, -1));
+			break;
+		default:
+			throw new HttpException('route not handled', 501);
+			break;
+	}
+	file_put_contents('./error.log', "\n---\n".$response."\n---\n", FILE_APPEND);
+	header('Content-Type: text/plain');
+	echo $response;
 }
 
 function post($explodedRoute) {
@@ -513,16 +585,16 @@ try {
 		if ($_SERVER['REQUEST_METHOD'] != 'POST') {
 			throw new HttpException('method not handled', 501);
 		}
-		if (empty($_FILES['logo'])) {
+		if (empty($_FILES['image'])) {
 			throw new HttpException('missing file', 400);
 		}
-		if ($_FILES['logo']['error'] !== 0) {
+		if ($_FILES['image']['error'] !== 0) {
 			throw new HttpException('upload error', 500);
 		}
 		$id = time().mt_rand();
-		$logo_ad = __DIR__ . '/config/image/' . $id;
-		$logo_af = $logo_ad. '/image.png';
-		if (!mkdir($logo_ad) || !move_uploaded_file($_FILES['logo']['tmp_name'], $logo_af)) {
+		$image_ad = __DIR__ . '/config/image/' . $id;
+		$image_af = $image_ad. '/image.png';
+		if (!mkdir($image_ad) || !move_uploaded_file($_FILES['image']['tmp_name'], $image_af)) {
 			throw new HttpException('upload copy error', 500);
 		}
 		echo json_encode(['id' => $id]);
@@ -538,7 +610,12 @@ try {
 	} else {
 		switch ($_SERVER['REQUEST_METHOD']) {
 			case 'GET':
-				get($explodedRoute);
+				if ($explodedRoute[0] === 'count') {
+					array_shift($explodedRoute);
+					getCount($explodedRoute);
+				} else {
+					get($explodedRoute);
+				}
 				break;
 			case 'POST':
 				post($explodedRoute);

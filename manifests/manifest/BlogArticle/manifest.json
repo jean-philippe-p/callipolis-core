@@ -11,6 +11,14 @@
             "type": "string"
         },
         {
+            "name": "resume",
+            "type": "string"
+        },
+        {
+            "name": "image",
+            "type": "string"
+        },
+        {
             "name": "elements",
             "type": "array",
             "values": {

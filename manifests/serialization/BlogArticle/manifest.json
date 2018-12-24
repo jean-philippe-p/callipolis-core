@@ -6,5 +6,12 @@
             "database":"1",
             "name":"blog_article"
         }
+    },
+    "properties": {
+        "elements": {
+            "aggregations": [
+                "parent"
+            ]
+        }
     }
 }
